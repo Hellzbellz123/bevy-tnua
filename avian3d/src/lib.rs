@@ -253,7 +253,7 @@ fn update_proximity_sensors_system(
                 }
             };
 
-            let query_filter = SpatialQueryFilter::from_excluded_entities([owner_entity]);
+            let query_filter = &SpatialQueryFilter::from_excluded_entities([owner_entity]);
             if let Some(TnuaAvian3dSensorShape(shape)) = shape {
                 let (_, owner_rotation, _) = transform.to_scale_rotation_translation();
                 let owner_rotation = Quat::from_axis_angle(
@@ -309,7 +309,7 @@ fn apply_motors_system(
         &mut LinearVelocity,
         &mut AngularVelocity,
         &Mass,
-        &Inertia,
+        &avian3d::dynamics::prelude::AngularInertia,
         &mut ExternalForce,
         &mut ExternalTorque,
         Option<&TnuaToggle>,
@@ -337,7 +337,7 @@ fn apply_motors_system(
             linare_velocity.0 += motor.lin.boost;
         }
         if motor.lin.acceleration.is_finite() {
-            external_force.set_force(motor.lin.acceleration * mass.0);
+            external_force.set_force(motor.lin.acceleration * mass.value());
         }
         if motor.ang.boost.is_finite() {
             angular_velocity.0 += motor.ang.boost;
@@ -346,7 +346,7 @@ fn apply_motors_system(
             external_torque.set_torque(
                 // NOTE: I did not actually verify that this is the correct formula. Nothing uses
                 // angular acceleration yet - only angular impulses.
-                inertia.0 * motor.ang.acceleration,
+                *inertia * motor.ang.acceleration,
             );
         }
     }
